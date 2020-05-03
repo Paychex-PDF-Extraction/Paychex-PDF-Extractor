@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Data_Parser
 {
@@ -13,6 +15,5 @@ namespace Data_Parser
         public string EMP_LNAME;
         public string EMP_FNAME;
         public string DOE; // date of extraction
-
     }
 }

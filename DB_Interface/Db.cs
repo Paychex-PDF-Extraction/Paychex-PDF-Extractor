@@ -1,6 +1,8 @@
 ﻿using Data_Parser;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -49,9 +51,9 @@ namespace DB_Interface
                 var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 return content;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Console.WriteLine(e.ToString());
+                Console.WriteLine(ex.Message);
                 return null;
             }
 
@@ -73,9 +75,9 @@ namespace DB_Interface
                 response.EnsureSuccessStatusCode();
                 return true;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Console.WriteLine(e);
+                Console.WriteLine(ex.Message);
                 return false;
             }
 

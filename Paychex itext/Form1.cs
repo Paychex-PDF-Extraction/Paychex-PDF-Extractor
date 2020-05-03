@@ -23,6 +23,7 @@ using iText.Kernel.Pdf.Canvas.Parser.Listener;
 using IOException = System.IO.IOException;
 using Data_Parser;
 using DB_Interface;
+using System.Text.RegularExpressions;
 
 namespace Paychex_itext
 {
@@ -56,26 +57,20 @@ namespace Paychex_itext
             Console.WriteLine(result); // <-- For debugging use
         }
 
-        private async void btnProcess_Click(object sender, EventArgs e)
+        private void btnProcess_Click(object sender, EventArgs e)
         {
-            txtResults.Text = PDFread.GetPdfPageText(txtFilePath.Text, 1);
+            txtResults.Text = PDFread.GetPdfPageText(txtFilePath.Text);
             /*Send to data parser for value extraction*/
-            //DataClass parsedData = VendorSelection.ParseData(txtResults.Text);
+            DataClass parsedData = VendorSelection.ParseData(txtResults.Text);
+            this.Hide();
+            writeToFile();
 
-            /*Send result of parser to db as c# objects*/
-            Db db = new Db("http://localhost:5984", "pdf_receipts", "tempAdmin", "gH5sE2*61Lu");
-            var result = await db.AddDoc(VendorSelection.ParseData(txtResults.Text));
-            if (result)
-            {
-                // success dialog and continue writing to file
-                MessageBox.Show("Success!");
-                writeToFile();
-            }
-            else
-            {
-                // failure alert and stop writing to file
-                MessageBox.Show("Failure");
-            }
+            /*user confirmation of data*/
+            ValidData viewData = new ValidData(parsedData);
+            viewData.ShowDialog();
+
+            /*close current form*/
+            this.Close();
         }
 
         private void writeToFile()
@@ -99,18 +94,31 @@ namespace Paychex_itext
 
     public static class PDFread
     {
-        public static string GetPdfPageText(string filePath, int pageNum)
+        public static string GetPdfPageText(string filePath)
         {
+
             using (PdfDocument pdfDocument = new PdfDocument(new PdfReader(filePath)))
             {
-
+                int numberOfPages = pdfDocument.GetNumberOfPages();
                 ITextExtractionStrategy extractionsStrategy = new SimpleTextExtractionStrategy();
-                string pageText = PdfTextExtractor.GetTextFromPage(pdfDocument.GetPage(pageNum), extractionsStrategy);
-                pageText = Encoding.UTF8.GetString(ASCIIEncoding.Convert(Encoding.Default, Encoding.UTF8, Encoding.Default.GetBytes(pageText)));
+                string pageText = "";
+                int pageNum = 1;
+
+                // Extract every page from the pdf
+                while (pageNum <= numberOfPages)
+                {
+                    pageText = PdfTextExtractor.GetTextFromPage(pdfDocument.GetPage(pageNum), extractionsStrategy);
+                    pageText = Encoding.UTF8.GetString(ASCIIEncoding.Convert(Encoding.Default, Encoding.UTF8, Encoding.Default.GetBytes(pageText)));
+                    pageNum++;
+                }
+
+                /* Processing to make regexes usable */
+                pageText = Regex.Replace(pageText, @"\t|\n|\r", " "); // remove non-readable characters
+                pageText = Regex.Replace(pageText, @"[^\u0000-\u007F]+", " "); // replace artifacts from ASCIIEncoding
                 pdfDocument.Close();
 
-
                 return pageText;
+
             }
 
         }
